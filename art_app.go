@@ -684,14 +684,6 @@ func PostUser(stub shim.ChaincodeStubInterface, function string, args []string) 
 			fmt.Println("PostUser() : write error while inserting record")
 			return nil, err
 		}
-
-		// Post Entry into UserCatTable - i.e. User Category Table
-		keys = []string{"2016", args[3], args[0]}
-		err = UpdateLedger(stub, "UserCatTable", keys, buff)
-		if err != nil {
-			fmt.Println("PostUser() : write error while inserting recordinto UserCatTable \n")
-			return nil, err
-		}
 	}
 
 	return buff, err
@@ -2033,13 +2025,23 @@ func UpdateLedger(stub shim.ChaincodeStubInterface, tableName string, keys []str
 	row := shim.Row{columns}
 	ok, err := stub.InsertRow(tableName, row)
 	if err != nil {
-		return fmt.Errorf("UpdateLedger: InsertRow into "+tableName+" Table operation failed. %s", err)
+		fmt.Errorf("UpdateLedger: InsertRow into "+tableName+" Table operation failed. %s", err)
+		ok, err = stub.ReplaceRow(tableName, row)
+		if err != nil {
+			fmt.Errorf("UpdateLedger: UpdateRow on "+tableName+" Table operation failed. \n %s", err)
+			return errors.New("Update record failed")
+		}
 	}
 	if !ok {
-		return errors.New("UpdateLedger: InsertRow into " + tableName + " Table failed. Row with given key " + keys[0] + " already exists")
+		fmt.Errorf("UpdateLedger: InsertRow into " + tableName + " Table failed. Row with given key " + keys[0] + " already exists")
+		ok, err = stub.ReplaceRow(tableName, row)
+		if err != nil {
+			fmt.Errorf("UpdateLedger: UpdateRow on "+tableName+" Table operation failed. \n %s", err)
+			return errors.New("Update record failed")
+		}
 	}
 
-	fmt.Println("UpdateLedger: InsertRow into ", tableName, " Table operation Successful. ")
+	fmt.Println("UpdateLedger: InsertRow/UpdateRow into ", tableName, " Table operation Successful. ")
 	return nil
 }
 
